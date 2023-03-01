@@ -4,29 +4,21 @@ import 'package:bloc/bloc.dart';
 import 'package:cantwait28/features/models/item.model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../repository/items_repository.dart';
+
 part 'home_state.dart';
 
 class HomeCubit extends Cubit<HomeState> {
-  HomeCubit() : super(const HomeState());
+  HomeCubit(this._itemsRepository) : super(const HomeState());
+
+  final ItemsRepository _itemsRepository;
 
   StreamSubscription? _streamSubscription;
 
   Future<void> start() async {
-    _streamSubscription = FirebaseFirestore.instance
-        .collection('items')
-        .orderBy('release_date')
-        .snapshots()
-        .listen(
+    _streamSubscription = _itemsRepository.getItemsStream().listen(
       (items) {
-        final itemModels = items.docs.map((doc) {
-          return ItemModel(
-            id: doc.id,
-            title: doc['title'],
-            imageURL: doc['image_url'],
-            releaseDate: (doc['release_date'] as Timestamp).toDate(),
-          );
-        }).toList();
-        emit(HomeState(items: itemModels));
+        emit(HomeState(items: items));
       },
     )..onError(
         (error) {
